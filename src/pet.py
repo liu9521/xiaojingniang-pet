@@ -3,7 +3,7 @@
 DeepSeek 桌宠 · 小鲸娘（蓝发女仆）
 =====================================
 · 透明置顶窗口，会呼吸、眨眼、东张西望、睡觉、哼歌、转圈
-· 单击摸头（随机反应），双击打开 DeepSeek，右键有完整菜单
+· 单击/双击摸头（随机反应），右键有完整菜单
 · 可拖拽、会掉到任务栏上、会自己在桌面上散步
 · 饱食度 / 心情 / 亲密度存档，喂食、玩耍、睡觉都有对应动画
 
@@ -23,7 +23,6 @@ import subprocess
 import sys
 import tempfile
 import time
-import webbrowser
 from collections import OrderedDict
 from pathlib import Path
 
@@ -50,37 +49,6 @@ ICON_RUNTIME = DATA_DIR / "pet.ico"                 # 快捷方式实际引用�
 KEY = "#010203"
 KEY_RGB = (1, 2, 3)
 FONT_BOLD = r"C:\Windows\Fonts\msyhbd.ttc"
-
-DSH_EXE = Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "DeepSeek Harness" / "DeepSeek Harness.exe"
-DSH_WEB = "http://127.0.0.1:56487"
-DEEPSEEK_WEB = "https://chat.deepseek.com"
-
-
-def _dsh_candidates() -> list[Path]:
-    """本机 DeepSeek Harness 客户端可能的位置。"""
-    out = [
-        Path(os.environ.get("LOCALAPPDATA", "")) / "Programs" / "DeepSeek Harness" / "DeepSeek Harness.exe",
-        Path(os.environ.get("PROGRAMFILES", "")) / "DeepSeek Harness" / "DeepSeek Harness.exe",
-        Path(os.environ.get("PROGRAMFILES(X86)", "")) / "DeepSeek Harness" / "DeepSeek Harness.exe",
-    ]
-    for base in (os.environ.get("LOCALAPPDATA", ""), os.environ.get("PROGRAMFILES", "")):
-        if not base:
-            continue
-        try:
-            out += list(Path(base).glob("Programs/*/DeepSeek Harness.exe"))
-            out += list(Path(base).glob("*DeepSeek*/DeepSeek Harness.exe"))
-        except Exception:
-            pass
-    seen, uniq = set(), []
-    for p in out:
-        if p and str(p) not in seen:
-            seen.add(str(p))
-            uniq.append(p)
-    return uniq
-
-
-DSH_CANDIDATES = _dsh_candidates()
-
 
 def _dpi_scale() -> float:
     if sys.platform != "win32":
@@ -258,7 +226,7 @@ LINES = {
         "要不要摸摸头？",
         "偷偷告诉您，我也在学写代码。",
         "CPU 在转，我的尾巴也在摇。",
-        "双击我可以打开 DeepSeek 哦。",
+        "双击我，我会跳一下。",
         "记得喝水呀。",
         "写代码累了就看看我。",
     ],
@@ -519,7 +487,7 @@ class PetApp:
 
         self._bind()
         self._place()
-        self.say(pick("hello") if self.state_data["pets"] else "初次见面，我是小鲸娘～双击我打开 DeepSeek！", 5.5)
+        self.say(pick("hello") if self.state_data["pets"] else "初次见面，我是小鲸鱼娘～点点我，我会动哦！", 5.5)
         self.draw()
         self.root.after(0, self.tick)
         self.root.after(1200, self.keep_top)
@@ -635,9 +603,11 @@ class PetApp:
                 pass
             self._click_job = None
         self.drag_moved = True
-        self.open_deepseek()
         self.play("happy", speed=1.25)
         self.say(random.choice(LINES["happy"]), 2.6)
+        self.state_data["pets"] = self.state_data.get("pets", 0) + 1
+        self.state_data["bond"] = self.state_data.get("bond", 0) + 1.0
+        self.burst("heart", 4)
 
     def pet_head(self):
         mood = self.state_data["mood"]
@@ -663,10 +633,6 @@ class PetApp:
     def on_menu(self, e):
         tk = self.tk
         m = tk.Menu(self.root, tearoff=0, font=("Microsoft YaHei UI", 9))
-        m.add_command(label="打开 DeepSeek Harness（本地客户端）", command=self.open_deepseek)
-        m.add_command(label="打开 DeepSeek 网页版", command=lambda: webbrowser.open(DEEPSEEK_WEB))
-        m.add_command(label="打开 Harness 界面", command=lambda: webbrowser.open(DSH_WEB))
-        m.add_separator()
         m.add_command(
             label=f"饱食 {int(self.state_data['hunger'])}%   心情 {int(self.state_data['mood'])}%   亲密度 Lv.{self.level()}",
             state="disabled",
@@ -754,79 +720,6 @@ class PetApp:
     def wake(self):
         self.play("wakeup", speed=1.15)
         self.say(pick("wake"), 3.0)
-
-    def open_deepseek(self):
-        """唤起本机已安装的 DeepSeek Harness；没在运行就启动它。"""
-        if self.focus_deepseek():
-            return
-        for exe in DSH_CANDIDATES:
-            if exe.exists():
-                try:
-                    os.startfile(str(exe))
-                    return
-                except Exception:
-                    try:
-                        subprocess.Popen([str(exe)], cwd=str(exe.parent))
-                        return
-                    except Exception:
-                        continue
-        webbrowser.open(DEEPSEEK_WEB)
-
-    def focus_deepseek(self) -> bool:
-        """把已运行的 Harness 主窗口激活到前台。"""
-        if sys.platform != "win32":
-            return False
-        user32 = ctypes.windll.user32
-        kernel32 = ctypes.windll.kernel32
-        hits = []
-
-        def proc_name(hwnd) -> str:
-            pid = ctypes.c_ulong(0)
-            user32.GetWindowThreadProcessId(hwnd, ctypes.byref(pid))
-            h = kernel32.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
-            if not h:
-                return ""
-            try:
-                buf = ctypes.create_unicode_buffer(1024)
-                size = ctypes.c_ulong(1024)
-                if kernel32.QueryFullProcessImageNameW(h, 0, buf, ctypes.byref(size)):
-                    return Path(buf.value).name
-            finally:
-                kernel32.CloseHandle(h)
-            return ""
-
-        @ctypes.WINFUNCTYPE(ctypes.c_bool, ctypes.c_void_p, ctypes.c_void_p)
-        def cb(hwnd, _):
-            try:
-                if not user32.IsWindowVisible(hwnd):
-                    return True
-                n = user32.GetWindowTextLengthW(hwnd)
-                if n <= 0:
-                    return True
-                buf = ctypes.create_unicode_buffer(n + 1)
-                user32.GetWindowTextW(hwnd, buf, n + 1)
-                title = buf.value
-                if "deepseek" not in title.lower() or "桌宠" in title:
-                    return True
-                if proc_name(hwnd).lower() != "deepseek harness.exe":
-                    return True
-                hits.append((n, hwnd))
-            except Exception:
-                pass
-            return True
-
-        user32.EnumWindows(cb, 0)
-        if not hits:
-            return False
-        hits.sort(reverse=True)
-        hwnd = hits[0][1]
-        try:
-            user32.ShowWindow(hwnd, 9)  # SW_RESTORE
-            user32.SetForegroundWindow(hwnd)
-            user32.BringWindowToTop(hwnd)
-        except Exception:
-            pass
-        return True
 
     # -- 主循环
     def tick(self):
