@@ -1,7 +1,7 @@
-# 小鲸鱼娘 · DeepSeek 桌宠
+# 小鲸鱼娘 · 桌面宠物
 
 一只住在 Windows 桌面上的蓝发鲸鱼女仆。透明无边框、始终置顶，会呼吸、眨眼、东张西望、打哈欠、
-睡觉、哼歌、转圈、敲键盘；点她摸摸头，双击直接唤起本机的 DeepSeek Harness。
+睡觉、哼歌、转圈、敲键盘；点她摸摸头，拖到哪儿就待在哪儿。
 
 ![桌面效果](assets/screenshots/desktop.png)
 
@@ -9,18 +9,18 @@
 
 ## 下载
 
-到 [Releases](../../releases) 页面下载最新版：
+到 [Releases](../../releases/latest) 页面下载最新版：
 
 | 文件 | 说明 |
 | --- | --- |
-| `XiaoJingNiang-Setup-v1.0.0.exe` | 小鲸鱼娘安装包，双击即装（约 66 MB） |
+| `XiaoJingNiang-Setup-v1.0.1.exe` | 安装包，双击即装（约 66 MB） |
 | `Source code` | 对应版本的源码 |
 
-系统要求：**Windows 10 / 11 64 位**。不需要安装 Python，不需要联网。
+系统要求：**Windows 10 / 11 64 位**。不需要安装 Python，不需要联网，不依赖任何其它软件。
 
 ## 安装 / 卸载
 
-1. 双击 `小鲸鱼娘-安装程序.exe`，点「是」
+1. 双击安装包，点「是」
 2. 自动装到 `%LOCALAPPDATA%\XiaoJingNiang`，创建桌面快捷方式与开机自启
 3. 装完自动启动
 
@@ -33,10 +33,9 @@
 
 | 操作 | 效果 |
 | --- | --- |
-| **双击** | 打开本机 DeepSeek Harness；已在运行则切到前台（最小化也会还原） |
-| **单击** | 摸摸头：随机「开心 / 害羞 / 生气 / 敲桌子」 |
+| **单击 / 双击** | 摸摸头：随机「开心 / 害羞 / 生气 / 敲桌子」反应，冒爱心 |
 | **拖拽** | 拎到桌面任意位置，松手就停在那儿，不会掉下去 |
-| **右键** | 打开 DeepSeek、喂小鱼干、喝奶茶、转圈、唱歌、工作、睡觉、伸懒腰、置顶、开机自启、退出 |
+| **右键** | 喂小鱼干、喝奶茶、转圈、唱歌、工作、睡觉、伸懒腰、随便说句话、置顶、开机自启、退出 |
 
 她还会自己找乐子：每 15～35 秒随机做个小动作，偶尔自言自语；饿肚子时表情会变。
 饱食度 / 心情 / 亲密度 / 陪伴时长都会存档。
@@ -54,10 +53,9 @@ pip install pillow
 python src/pet.py
 ```
 
-需要 Python 3.9+。生成/重建动画帧包：
+需要 Python 3.9+。重建动画帧包：
 
 ```powershell
-# 从 dsh-whale-girl-pet 的 webm 重新抽取裁切
 python src/build_anims.py
 ```
 
@@ -73,7 +71,7 @@ pyinstaller --noconfirm --windowed --name 小鲸鱼娘 --icon assets/pet.ico --a
 - **透明窗口**：Tk + `-transparentcolor` 色键，无边框、置顶、透明区域鼠标穿透
 - **动画**：素材 webm 逐帧解码 → 裁切 → 逐帧 WebP 打包进单个 `.bin`，运行时按需解码 + LRU 缓存
 - **DPI**：进程 DPI 感知，150% 缩放下按物理像素渲染
-- **交互**：窗口内自绘气泡、拖拽物理、随机行为状态机
+- **交互**：窗口内自绘气泡、拖拽、随机行为状态机
 
 ## 素材与许可
 
@@ -88,7 +86,6 @@ pyinstaller --noconfirm --windowed --name 小鲸鱼娘 --icon assets/pet.ico --a
 
 如果这只小鲸鱼娘让你心情好了一点，可以请她喝杯奶茶：
 
-<!-- 收款码放在 assets/donate-qr.png，替换占位即可 -->
 <img src="assets/donate-qr.png" width="220" alt="打赏二维码">
 
 （打赏完全自愿，不影响任何功能。）
