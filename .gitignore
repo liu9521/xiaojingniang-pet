@@ -1,0 +1,11 @@
+﻿# build
+build/
+dist/
+*.spec
+__pycache__/
+*.pyc
+
+# 运行时产物
+*.log
+_MEL*
+_MEI*
